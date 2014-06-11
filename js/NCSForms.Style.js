@@ -1,3 +1,7 @@
+// ----------------------------------------
+// NCSFieldStyle
+// ----------------------------------------
+
 function NCSFieldStyle(brCount)
 {
 	this['brCount'] = brCount || 3;
@@ -32,48 +36,6 @@ NCSFieldStyle.prototype.getElement = function(containerEl, id)
 	}
 }
 
-NCSFieldStyle.prototype.blueifyLabel = function(labelEl)
-{
-	// LABEL
-	labelText = labelEl.innerHTML;
-	labelTextNode = document.createTextNode(labelText);
-
-	var labelDiv = createEl("div");
-	labelDiv.appendChild(labelTextNode);
-	labelDiv.className = "fluid Flow_dialogue_texte_bleu";
-
-	var parentEl = labelEl.parentNode;
-	parentEl.insertBefore(labelDiv, labelEl);
-	parentEl.removeChild(labelEl);
-}
-
-NCSFieldStyle.prototype.redifyComment = function(commentEl)
-{
-	var commentId = commentEl.id;
-	var parentEl = commentEl.parentNode;
-	parentEl.removeChild(commentEl);
-
-	var commentEl = document.createElement("div");
-	commentEl.id = commentId;
-	commentEl.className = "fluid message_confirmation";
-
-	// parentEl.appendChild(brEl);
-	parentEl.appendChild(commentEl);
-
-	for(var i = 0; i < this.brCount; i++)
-		parentEl.appendChild(document.createElement("br"));
-}
-
-NCSFieldStyle.prototype.styleInput = function(inputEl, size, maxLength)
-{
-	size = size || 18;
-	maxLength = maxLength || 30;
-
-	inputEl.size = size;
-	inputEl.maxLength = maxLength;
-	inputEl.className = "form";
-}
-
 NCSFieldStyle.prototype.labelAsPlaceHolder = function(labelEl, inputEl)
 {
 	var labelText = labelEl.textContent;
@@ -101,7 +63,193 @@ NCSFieldStyle.prototype.swap = function(newEl, oldEl, copyId)
 	parentEl.removeChild(oldEl);
 }
 
-NCSFieldStyle.prototype.addBoardCharac = function(boardEl, valueEl, title)
+NCSFieldStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl)
+{
+	return false;
+}
+
+NCSFieldStyle.prototype.stylize = function(field)
+{
+	var containerEl = field.edit();
+
+	var fieldClass = get_class(field);
+
+	// or depending on type.
+	// TODO: read the field style
+
+	var containerId = containerEl.id;
+	var labelId = field.getLabelId();
+	var commentId = field.getCommentId();
+	var inputId = field.getInputId();
+
+	var labelEl = this.getElement(containerEl, labelId);
+	var commentEl = this.getElement(containerEl, commentId);
+	var inputEl = this.getElement(containerEl, inputId);
+
+	var labelText = labelEl.textContent;
+	var brEl;
+	var parentEl;
+
+	if(this.stylizeByClass(field, fieldClass, containerEl))
+	{
+		// we're happy!
+	}
+	else
+	{
+		// COMMON FIELDS
+		if(inputEl != undefined)
+		{
+			if(inputEl.localName == "input");
+			{
+				this.labelAsPlaceHolder(labelEl, inputEl);				
+				this.styleInput(inputEl, 32);
+				this.removeBrAfter(inputEl);		
+			}
+			
+			if(inputEl.localName == 'textarea')
+			{
+				inputEl.className = "description_projet";				
+				inputEl.placeholder = labelText;
+
+				if(field.field == "mission_statement")
+				{
+					var otherLabelEl = createEl("div");					
+					otherLabelEl.appendChild(document.createTextNode("Une phrase que vous diriez pour vous présenter à un nouveau client"));
+					inputEl.parentNode.insertBefore(otherLabelEl, inputEl);
+					inputEl.className = "description_projet";
+				}
+			}
+		}
+	}
+
+	if(commentEl != undefined)
+		this.redifyComment(commentEl);
+
+	return containerEl;
+}
+
+
+// ----------------------------------------
+// VraiProStyle
+// ----------------------------------------
+
+function VraiProStyle(brCount)
+{
+	this['brCount'] = brCount || 3;	
+}
+
+VraiProStyle.inherits(NCSFieldStyle);
+
+VraiProStyle.prototype.blueifyLabel = function(labelEl)
+{
+	// LABEL
+	labelText = labelEl.innerHTML;
+	labelTextNode = document.createTextNode(labelText);
+
+	var labelDiv = createEl("div");
+	labelDiv.appendChild(labelTextNode);
+	labelDiv.className = "fluid Flow_dialogue_texte_bleu";
+
+	var parentEl = labelEl.parentNode;
+	parentEl.insertBefore(labelDiv, labelEl);
+	parentEl.removeChild(labelEl);
+}
+
+
+VraiProStyle.prototype.redifyComment = function(commentEl)
+{
+	var commentId = commentEl.id;
+	var parentEl = commentEl.parentNode;
+	parentEl.removeChild(commentEl);
+
+	var commentEl = document.createElement("div");
+	commentEl.id = commentId;
+	commentEl.className = "fluid message_confirmation";
+
+	// parentEl.appendChild(brEl);
+	parentEl.appendChild(commentEl);
+
+	for(var i = 0; i < this.brCount; i++)
+		parentEl.appendChild(document.createElement("br"));
+}
+
+VraiProStyle.prototype.styleInput = function(inputEl, size, maxLength)
+{
+	size = size || 18;
+	maxLength = maxLength || 30;
+
+	inputEl.size = size;
+	inputEl.maxLength = maxLength;
+	inputEl.className = "form";
+}
+
+// ----------------------------------------
+// VraiProCPPStyle
+// ----------------------------------------
+
+function VraiProAPCStyle(brCount)
+{
+	this['brCount'] = brCount || 3;
+}
+
+VraiProAPCStyle.inherits(VraiProStyle);
+
+VraiProAPCStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl)
+{
+	var containerId = containerEl.id;
+	var labelId = field.getLabelId();
+	var commentId = field.getCommentId();
+	var inputId = field.getInputId();
+
+
+	var labelEl = this.getElement(containerEl, labelId);
+	var commentEl = this.getElement(containerEl, commentId);
+	var inputEl = this.getElement(containerEl, inputId);
+
+	var labelText = labelEl.textContent;
+	var brEl;
+	var parentEl;
+
+	if(fieldClass == "SingleSelectIconField")
+	{
+		var optionsContEl = field.getOptionsContainerEl();
+		field.setOptionStylizer(this);				
+	}
+	else
+		return false;
+
+	return true;
+}
+
+VraiProAPCStyle.prototype.stylizeOption = function(field, optionEl)
+{
+	var fieldClass = get_class(field);
+	if(fieldClass == "SingleSelectIconField")
+	{
+		optionEl.className = "bouton APC_wrapper_grand_icone1";
+
+		if(optionEl.firstChild != null)
+		{
+			optionEl.firstChild.className = "fluid APC_iconholder_grand";
+			if(optionEl.firstChild.nextSibling != null)
+				optionEl.firstChild.nextSibling.className = "fluid APC_texte_grand_icone";
+		}
+	}
+}
+
+
+// ----------------------------------------
+// VraiProCPPStyle
+// ----------------------------------------
+
+function VraiProCPPStyle(brCount)
+{
+	this['brCount'] = brCount || 3;
+}
+
+VraiProCPPStyle.inherits(VraiProStyle);
+
+VraiProCPPStyle.prototype.addBoardCharac = function(boardEl, valueEl, title)
 {
 	var characEl = createEl("div");
 	characEl.className = "fluid Tri_wrapper_caracteristique";
@@ -114,15 +262,8 @@ NCSFieldStyle.prototype.addBoardCharac = function(boardEl, valueEl, title)
 	valueEl.className = "fluid Tri_pourc";
 }
 
-NCSFieldStyle.prototype.stylize = function(field)
+VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl)
 {
-	var containerEl = field.edit();
-
-	var fieldClass = get_class(field);
-
-	// or depending on type.
-	// TODO: read the field style
-
 	var containerId = containerEl.id;
 	var labelId = field.getLabelId();
 	var commentId = field.getCommentId();
@@ -343,35 +484,8 @@ NCSFieldStyle.prototype.stylize = function(field)
 		this.blueifyLabel(labelEl);
 	}
 	else
-	{
-		// COMMON FIELDS
-		if(inputEl != undefined)
-		{
-			if(inputEl.localName == "input");
-			{
-				this.labelAsPlaceHolder(labelEl, inputEl);				
-				this.styleInput(inputEl, 32);
-				this.removeBrAfter(inputEl);		
-			}
-			
-			if(inputEl.localName == 'textarea')
-			{
-				inputEl.className = "description_projet";				
-				inputEl.placeholder = labelText;
+		return false;
 
-				if(field.field == "mission_statement")
-				{
-					var otherLabelEl = createEl("div");					
-					otherLabelEl.appendChild(document.createTextNode("Une phrase que vous diriez pour vous présenter à un nouveau client"));
-					inputEl.parentNode.insertBefore(otherLabelEl, inputEl);
-					inputEl.className = "description_projet";
-				}
-			}
-		}
-	}
+	return true;
 
-	if(commentEl != undefined)
-		this.redifyComment(commentEl);
-
-	return containerEl;
 }

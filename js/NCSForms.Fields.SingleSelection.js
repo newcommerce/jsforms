@@ -197,14 +197,6 @@ SingleSelectionField.prototype.valueAccepted = function()
 }
 
 
-
-
-
-
-
-
-
-
 // ------------------------------------------
 // SingleSelectRadioField
 // ------------------------------------------
@@ -228,6 +220,7 @@ SingleSelectRadioField.prototype.createInputField = function()
 {
 	var windowVar = this.windowVar;
 	var inputEl = document.createElement("div");
+	inputEl.id = this.getOptionsContainerId();
 	this['inputEl'] = inputEl;
 }
 
@@ -250,6 +243,16 @@ SingleSelectRadioField.prototype.getInputEl = function()
 	ajaxGet(this.windowVar, "valuesReceived", "valuesReceiptionError", url, {});	
 
 	return inputEl;
+}
+
+SingleSelectRadioField.prototype.getOptionsContainerId = function()
+{
+	return this.getContainerId()+"_options_container";
+}
+
+SingleSelectRadioField.prototype.getOptionsContainerEl = function()
+{
+	return this.inputEl;
 }
 
 SingleSelectRadioField.prototype.valuesReceived = function(event)
@@ -329,18 +332,12 @@ SingleSelectRadioField.prototype.createOption = function(valueObj, def)
 
 
 
-
-
-
-
-
 // --------------------------------------------
 // SingleSelectIconField
 // --------------------------------------------
 
 function SingleSelectIconField(modelField, label, sourceModel, sourceDisplayField, selectedStyle, unselectedStyle, defaultIcon)
 {
-
 	selectedStyle = selectedStyle || "iconSelected";
 	unselectedStyle = unselectedStyle || "icon";
 	sourceDisplayField = sourceDisplayField || "name";
@@ -360,6 +357,11 @@ function SingleSelectIconField(modelField, label, sourceModel, sourceDisplayFiel
 }
 
 SingleSelectIconField.inherits(SingleSelectRadioField);
+
+SingleSelectIconField.prototype.setOptionStylizer = function(optionStylizer)
+{
+	this.optionStylizer = optionStylizer;
+}
 
 SingleSelectIconField.prototype.createOption = function(valueObj, def)
 {
@@ -388,7 +390,7 @@ SingleSelectIconField.prototype.createOption = function(valueObj, def)
 
 	brEl = document.createElement("br");
 
-	containerEl = document.createElement("div");
+	containerEl = document.createElement("button");
 	containerEl.id = containerId;
 
 	containerEl.appendChild(imgEl);
@@ -411,6 +413,9 @@ SingleSelectIconField.prototype.createOption = function(valueObj, def)
 
 	this.iconEls.push(containerEl);
 	this.values.push(valueObj);
+
+	if(this.optionStylizer != null)
+		containerEl = this.optionStylizer.stylizeOption(this, containerEl);
 
 	inputEl.appendChild(containerEl);
 }
@@ -451,13 +456,6 @@ SingleSelectIconField.prototype.getValue = function()
 {
 	return this.selectedValue;	
 }
-
-
-
-
-
-
-
 
 
 
