@@ -1,0 +1,116 @@
+<html>
+<title>big euh!</title>
+<head>
+<script src="js/NCSUtils.js" type="text/javascript"></script>	
+<script src="js/NCSForms.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.SingleSelection.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.MultiSelection.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.MultiImage.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.MultiSelectionAttributed.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.MultiSelectionFreeForm.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.Specifics.js" type="text/javascript"></script>
+<script src="js/NCSForms.Fields.TriangleValeurs.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+	window.onload = function(e){ 
+	    startModel();
+	}
+
+	function startModel()
+	{
+		var model = window['model'] = new NCSModel("project", -1);	   
+		model.addRelation("owner", 1);
+		model.start();
+		model.addEventListener('ready', function(event) { keepGoing(); });
+	}
+
+	function keepGoing()
+	{
+		var model = window['model'];
+
+		var form = new NCSForm(model, "progressBar", "formStepContainer", "previousButton", "nextButton");
+
+		var step5 = form.createStep("fifth");
+		var metiersField = new AttributedMultiSelectionField("entreprise_metier_match", "entreprise_id", "metier", "metier_id", "name", "carte_ccq", "Carte CCQ", "Sélectionne tes metiers", 2, 5);
+		var specialtyField = new FreeFormMultiValueField("entreprise_specialty", "entreprise_id", "name", "id", "Vos spécialités", 2, 7);
+		step5.addField(metiersField);
+		step5.addField(specialtyField);
+// ------
+// STEP 3
+
+		var step3 = form.createStep("third");
+
+		var triangleField = new TriangleValeursField("costs", "speed", "quality", "Triangle Valeurs", 150, 10);
+		
+		step3.addField(triangleField);
+
+
+// ------
+// STEP 1
+
+		var step1 = form.createStep("first");
+
+		var nameField = new NameField("name", "Company Name");
+		nameField.setMessages("check", "Please enter a name using letters and spaces");
+
+		var atoutField = new FlexibleMultiSelectionField("entreprise_atout_match", "entreprise_id", "entreprise_atout", "atout_id", "name", "Atouts", 2, 3);
+
+		var projectTypeField = new RecursiveSelectionField("years_experience", "Project Type", "project_type", "name");	
+
+		var multiImageField = new MultiFileUploadField(1, "Profile Images", 1, 2, "image/*");
+
+
+		step1.addField(nameField);
+		step1.addField(atoutField);
+		step1.addField(projectTypeField);
+		step1.addField(multiImageField);
+
+
+// ------
+// STEP 2
+
+		var step2 = form.createStep("second");
+		var yearsExField = new NumericField("years_experience", "Years of experience", 2, 2);
+		var numberEmployesField = new NumericField("nombre_employes", "How many employees", 2, 2);
+
+		step2.addField(yearsExField);
+		step2.addField(numberEmployesField);
+
+
+// -----
+// STEP 4
+		var step4 = form.createStep("fourth");
+
+		var postalCodeField = new PostalCodeField("postal_code", "Postal Code");
+		var profileNameField = new ProfileUrlField("nom_profil", "http://vraipro.ca/", 24, 24);
+		var priceRangeField = new SingleSelectionField("costs", "Price Range", "price_range", "name");
+		
+		step4.addField(postalCodeField);
+		step4.addField(profileNameField);
+		step4.addField(priceRangeField);
+
+		form.start();
+
+		// make steps work -- good, not perfect.
+		// fix bug with server side validation
+		// make multi-image upload work
+		// make recursive selection work
+	}
+
+	function somethingelse()
+	{
+		var emailField = new EmailField("nom_profil", "Email", 32, 32);		
+		var debutField = new DateField("date_debut", "Date Debut");
+		var endField = new DateField("date_end", "Date End");
+	}
+</script>
+</head>
+<body>
+	<progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
+	<br />
+	<br />
+	<div id="formStepContainer"></div>
+	<div id="nextWrapper"><a id='previousButton' href="#">Previous</a> --- <a id='nextButton' href="#">Next</a></div><br /><br />
+	<div id='output'></div>
+</body>
