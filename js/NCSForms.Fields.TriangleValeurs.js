@@ -1,8 +1,15 @@
 // ----------------------------------------
-// TriangeValeursField
+// TriangleValeursField
 // ----------------------------------------
 
 function TriangleValeursField(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor)
+{
+	this.constructTriangle(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor);	
+}
+
+TriangleValeursField.inherits(NCSFormField);
+
+TriangleValeursField.prototype.constructTriangle = function(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor)
 {
 	this['width'] = width = width || 150;
 	this['height'] = Math.round(Math.sqrt(width*width - (width/2)*(width/2)));
@@ -24,12 +31,7 @@ function TriangleValeursField(modelField1, modelField2, modelField3, label, widt
 	this['mouseDown'] = false;
 	this['triangleX'] = width/2;
 	this['triangleY'] = height/2;
-
-	this.drawRectangle();
-	this.drawCircles();
 }
-
-TriangleValeursField.inherits(NCSFormField);
 
 TriangleValeursField.prototype.getInputEl = function()
 {
@@ -56,10 +58,22 @@ TriangleValeursField.prototype.getInputEl = function()
 	}
 
 	this.validate();
-	this.drawClickTarget();
-	this.drawValues();
+	this.updateVisuals();
 
 	return this.canvasContainer;
+}
+
+TriangleValeursField.prototype.getCanvasContainerEl = function()
+{
+	return this.canvasContainer;
+}
+
+TriangleValeursField.prototype.updateVisuals = function()
+{
+	this.clearCanvas(this.canvasTriangle);
+	this.drawRectangle();
+	this.drawCircles();
+	this.drawClickTarget();
 }
 
 TriangleValeursField.prototype.getInputId = function()
@@ -83,23 +97,22 @@ TriangleValeursField.prototype.createInputField = function()
 	width = this.width;
 	height = this.height;
 
-	var canvasTriangle = this['canvasTriangle'] = createEl("canvas");
-	var canvasBars = this['canvasBars'] = createEl("canvas");
+	var canvasTriangle = this.createCanvasTriangle();
+
 	var canvasContainer = this['canvasContainer'] = createEl("div");
-
-	canvasTriangle.id = this.getTriangleCanvasId();
-	canvasTriangle.width = width;
-	canvasTriangle.height = height;
-
-	canvasBars.id = this.getBarsCanvasId();
-	canvasBars.width = width;
-	canvasBars.height = height;
 
 	canvasContainer.id = this.getInputId();
 	canvasContainer.appendChild(canvasTriangle);
-	canvasContainer.appendChild(canvasBars);
+}
 
+TriangleValeursField.prototype.createCanvasTriangle = function()
+{
 	var windowVar = this.windowVar;
+
+	var canvasTriangle = this['canvasTriangle'] = createEl("canvas");
+	canvasTriangle.id = this.getTriangleCanvasId();
+	canvasTriangle.width = this.width;
+	canvasTriangle.height = this.height;
 
 	// MOUSE EVENTS
 	canvasTriangle.addEventListener("mousedown", function(event) { window[windowVar].canvasMouseDown(event); }, false);
@@ -111,8 +124,9 @@ TriangleValeursField.prototype.createInputField = function()
 	canvasTriangle.addEventListener("touchend", function(event) { window[windowVar].canvasTouchEnd(event); }, false);
 	canvasTriangle.addEventListener("touchcancel", function(event) { window[windowVar].canvasTouchCancel(event); }, false);
 	canvasTriangle.addEventListener("touchleave", function(event) { window[windowVar].canvasTouchEnd(event); }, false);
-	canvasTriangle.addEventListener("touchmove", function(event) { window[windowVar].canvasTouchMove(event); }, false);
+	canvasTriangle.addEventListener("touchmove", function(event) { window[windowVar].canvasTouchMove(event); }, false);	
 
+	return canvasTriangle;
 }
 
 function copyTouch(touch)
@@ -233,18 +247,14 @@ TriangleValeursField.prototype.updatePoint = function(ptx, pty)
 	{
 		this.mouseX = ptx;
 		this.mouseY = pty;
-		this.clearCanvas(this.canvasTriangle);
-		this.drawRectangle();
-		this.drawCircles();
-		this.drawClickTarget();
+		
 
 		this.edited = true;
 		// validate calculates values
 		this.validate();
 
 		// validate needs to be called first before drawing values
-		this.clearCanvas(this.canvasBars);
-		this.drawValues();
+		this.updateVisuals();
 	}
 }
 
@@ -388,7 +398,18 @@ TriangleValeursField.prototype.drawCircles = function()
 	}
 }
 
-TriangleValeursField.prototype.drawValues = function()
+// ----------------------------------------
+// TriangleValeursBarsField
+// ----------------------------------------
+
+function TriangleValeursBarsField(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor)
+{
+	this.constructTriangle(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor);	
+}
+
+TriangleValeursBarsField.inherits(TriangleValeursField);
+
+TriangleValeursBarsField.prototype.drawValues = function()
 {
 	var value1 = this.getModelValue(this.modelField1);
 	var value2 = this.getModelValue(this.modelField2);
@@ -429,4 +450,120 @@ TriangleValeursField.prototype.drawValues = function()
 		ctx.fillStyle = this.circle3Color;
 		ctx.fill();
 	}
+}
+
+TriangleValeursBarsField.prototype.createCanvasBars = function()
+{
+	var canvasBars = this['canvasBars'] = createEl("canvas");
+	canvasBars.id = this.getBarsCanvasId();
+	canvasBars.width = this.width;
+	canvasBars.height = this.height;
+
+	return canvasBars;
+}
+
+TriangleValeursBarsField.prototype.updateVisuals = function()
+{
+	this.clearCanvas(this.canvasTriangle);
+	this.drawRectangle();
+	this.drawCircles();
+	this.drawClickTarget();
+
+	this.clearCanvas(this.canvasBars);
+	this.drawValues();
+}
+
+TriangleValeursBarsField.prototype.createInputField = function()
+{ 
+	var containerId = this.getContainerId();
+	width = this.width;
+	height = this.height;
+
+	var canvasTriangle = this.createCanvasTriangle();
+	var canvasBars = this.createCanvasBars();
+
+	var canvasContainer = this['canvasContainer'] = createEl("div");
+
+	canvasContainer.id = this.getInputId();
+	canvasContainer.appendChild(canvasTriangle);
+	canvasContainer.appendChild(canvasBars);
+}
+
+
+// ----------------------------------------
+// TriangleValeursBoardField
+// ----------------------------------------
+
+function TriangleValeursBoardField(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor)
+{
+	this.constructTriangle(modelField1, modelField2, modelField3, label, width, circleRadius, circle1Color, circle2Color, circle3Color, triangleColor, valueColor);	
+}
+
+TriangleValeursBoardField.inherits(TriangleValeursField);
+
+TriangleValeursBoardField.prototype.updateVisuals = function()
+{
+	this.clearCanvas(this.canvasTriangle);
+	this.drawRectangle();
+	this.drawCircles();
+	this.drawClickTarget();
+
+	this.updateBoard();
+}
+
+TriangleValeursBoardField.prototype.updateBoard = function()
+{
+	var value1 = this.getModelValue(this.modelField1);
+	var value2 = this.getModelValue(this.modelField2);
+	var value3 = this.getModelValue(this.modelField3);
+
+	var v1El = this.boardValue1El;
+	var v2El = this.boardValue2El;
+	var v3El = this.boardValue3El;
+
+	removeAllChilds(v1El);
+	removeAllChilds(v2El);
+	removeAllChilds(v3El);
+
+	v1El.appendChild(document.createTextNode(value1 + "%"));
+	v2El.appendChild(document.createTextNode(value2 + "%"));
+	v3El.appendChild(document.createTextNode(value3 + "%"));
+}
+
+TriangleValeursBoardField.prototype.createInputField = function()
+{ 
+	var containerId = this.getContainerId();
+	width = this.width;
+	height = this.height;
+
+	var canvasTriangle = this.createCanvasTriangle();	
+	var canvasContainer = this['canvasContainer'] = createEl("div");
+
+	canvasContainer.id = this.getInputId();
+
+	// create one div per thing.
+	this['boardValue1El'] = createEl("div");
+	this['boardValue2El'] = createEl("div");
+	this['boardValue3El'] = createEl("div");
+
+	canvasContainer.appendChild(this.boardValue1El);
+	canvasContainer.appendChild(this.boardValue2El);
+	canvasContainer.appendChild(this.boardValue3El);
+
+	canvasContainer.appendChild(canvasTriangle);
+}
+
+TriangleValeursBoardField.prototype.getBoardValue1El = function()
+{
+	return this.boardValue1El;
+}
+
+TriangleValeursBoardField.prototype.getBoardValue2El = function()
+{
+	return this.boardValue2El;
+}
+
+TriangleValeursBoardField.prototype.getBoardValue3El = function()
+{
+	return this.boardValue3El;
 }

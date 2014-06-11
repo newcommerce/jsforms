@@ -101,6 +101,19 @@ NCSFieldStyle.prototype.swap = function(newEl, oldEl, copyId)
 	parentEl.removeChild(oldEl);
 }
 
+NCSFieldStyle.prototype.addBoardCharac = function(boardEl, valueEl, title)
+{
+	var characEl = createEl("div");
+	characEl.className = "fluid Tri_wrapper_caracteristique";
+	var titleEl = createEl("div");
+	titleEl.className = "fluid Tri_texte";
+	titleEl.appendChild(document.createTextNode(title));
+	characEl.appendChild(titleEl);
+	characEl.appendChild(valueEl);
+	boardEl.appendChild(characEl);
+	valueEl.className = "fluid Tri_pourc";
+}
+
 NCSFieldStyle.prototype.stylize = function(field)
 {
 	var containerEl = field.edit();
@@ -123,7 +136,35 @@ NCSFieldStyle.prototype.stylize = function(field)
 	var brEl;
 	var parentEl;
 
-	if(fieldClass == "RBQField")
+	if(fieldClass == "TriangleValeursBoardField")
+	{
+		// remove next siblings if they already existed.		
+		var boardElId = "triangle_board_container";
+		var boardEl = this.getElement(containerEl, boardElId);
+		if(boardEl != undefined)
+			containerEl.removeChild(boardEl);
+
+		this.blueifyLabel(labelEl);
+
+		boardEl = createEl("div");
+		boardEl.className = "fluid Tri_wrapper_resultats";
+		boardEl.id = boardElId;
+
+		var val1El = field.getBoardValue1El();
+		var val2El = field.getBoardValue2El();
+		var val3El = field.getBoardValue3El();
+
+		removeFromParent(val1El);
+		removeFromParent(val2El);
+		removeFromParent(val3El);
+
+		this.addBoardCharac(boardEl, val1El, "Qualité");
+		this.addBoardCharac(boardEl, val2El, "Rapidité");
+		this.addBoardCharac(boardEl, val3El, "Économie");
+
+		containerEl.insertBefore(boardEl, field.getCanvasContainerEl());
+	}
+	else if(fieldClass == "RBQField")
 	{
 		this.blueifyLabel(labelEl);
 		this.styleInput(inputEl, 12, 12);
