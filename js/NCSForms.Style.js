@@ -158,17 +158,9 @@ VraiProStyle.prototype.blueifyLabel = function(labelEl)
 
 VraiProStyle.prototype.redifyComment = function(commentEl)
 {
-	var commentId = commentEl.id;
-	var parentEl = commentEl.parentNode;
-	parentEl.removeChild(commentEl);
-
-	var commentEl = document.createElement("div");
-	commentEl.id = commentId;
 	commentEl.className = "fluid message_confirmation";
 
-	// parentEl.appendChild(brEl);
-	parentEl.appendChild(commentEl);
-
+	var parentEl = commentEl.parentNode;
 	for(var i = 0; i < this.brCount; i++)
 		parentEl.appendChild(document.createElement("br"));
 }
@@ -235,6 +227,8 @@ VraiProAPCStyle.prototype.stylizeOption = function(field, optionEl)
 				optionEl.firstChild.nextSibling.className = "fluid APC_texte_grand_icone";
 		}
 	}
+
+	return optionEl;
 }
 
 
@@ -322,39 +316,44 @@ VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, container
 
 	else if(fieldClass == "ProfileUrlField")
 	{
-		var labelContainerId = field.getLabelContainerId();
-		var labelContainerEl = this.getElement(containerEl, labelContainerId);
+		var inputEl = field.getInputEl(); // input text
+		var labelContainerEl = field.getLabelContainerEl(); // div
+		var preLabelEl = field.getPreLabelEl(); // span
+		var labelEl = field.getLabelEl(); 
 
-		var prefixId = field.getUrlPrefixId();
-		var urlPrefixEl = this.getElement(labelContainerEl, prefixId);
-		var prefixText = urlPrefixEl.textContent;
-		var prefixTextEl = document.createTextNode(prefixText);		
-		var labelTextEl = document.createTextNode(labelText);
-		var urlContainerEl = createEl("div");
+		// div (container)
+			// div class='fluid FLOW_dialogue_texte'
+			// br
+			// br
+			// div class="CPP3_wwwvraipro"
+				// div class='fluid CPP3_texte_wwwvraipro'
+					// www.vraipro.ca/
+				// input text class='form CPP3_nom_profil'
+			// div class='fluid message_confirmation'
 
-		containerEl = document.createElement("span");
+		removeFromParent(labelEl);
+		removeFromParent(labelContainerEl);
+		removeFromParent(preLabelEl);
+		removeFromParent(inputEl);		
 
-		labelEl = createEl("div");
-		labelEl.className = "fluid FLOW_dialogue_texte";
-		labelEl.appendChild(labelTextEl);
+		removeAllChilds(containerEl);
+		removeAllChilds(labelContainerEl);
 
 		containerEl.appendChild(labelEl);
-		containerEl.appendChild(createEl("br"));
-		containerEl.appendChild(createEl("br"));
+		labelEl.className = "fluid FLOW_dialogue_texte";
 
-		urlPrefixEl = createEl("div");
-		urlPrefixEl.className = "fluid CPP3_texte_wwwvraipro";
-		urlPrefixEl.appendChild(prefixTextEl);
-		this.styleInput(inputEl);
+		containerEl.appendChild(createEl("br"));
+		containerEl.appendChild(createEl("br"));
+		containerEl.appendChild(labelContainerEl);
+		labelContainerEl.className = "CPP3_wwwvraipro";
+
+		preLabelEl.className = "fluid CPP3_texte_wwwvraipro";
+		labelContainerEl.appendChild(preLabelEl);
+		labelContainerEl.appendChild(inputEl);
 		inputEl.className = "form CPP3_nom_profil";
+		inputEl.size = 17;
+		inputEl.maxLength = 30;
 
-		urlContainerEl.className = "CPP3_wwwvraipro";
-		urlContainerEl.appendChild(urlPrefixEl);
-		urlContainerEl.appendChild(inputEl);
-
-		containerEl.appendChild(urlContainerEl);
-
-		commentEl.parentNode.removeChild(commentEl);
 		containerEl.appendChild(commentEl);
 	}
 	else if(fieldClass == "TriangleValeursField")

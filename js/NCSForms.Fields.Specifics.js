@@ -82,13 +82,13 @@ ProfileUrlField.prototype.createLabelEl = function()
 	var labelContainerEl = document.createElement("div");
 	labelContainerEl.id = this.getLabelContainerId();
 
-	var preLabelEl = document.createElement("span");
+	var preLabelEl = document.createElement("div");
 	preLabelEl.id = this.getUrlPrefixId();
 
 	var textNode = document.createTextNode(this.urlPrefix);
 	preLabelEl.appendChild(textNode);
 
-	var labelEl = document.createElement("span");
+	var labelEl = document.createElement("div");
 	labelEl.id = this.getLabelId();
 
 	textNode = document.createTextNode(this.label);
@@ -96,7 +96,20 @@ ProfileUrlField.prototype.createLabelEl = function()
 
 	labelContainerEl.appendChild(preLabelEl);
 	labelContainerEl.appendChild(labelEl);
-	this['labelEl'] = labelContainerEl;
+
+	this['labelContainerEl'] = labelContainerEl;
+	this['preLabelEl'] = preLabelEl;
+	this['labelEl'] = labelEl;
+}
+
+ProfileUrlField.prototype.getPreLabelEl = function()
+{
+	return this.preLabelEl;
+}
+
+ProfileUrlField.prototype.getLabelContainerEl = function()
+{
+	return this.labelContainerEl;
 }
 
 function PhoneField(modelField, label)
@@ -112,6 +125,7 @@ PhoneField.inherits(NCSFormField);
 function RBQField(modelField, label)
 {
 	this.construct("rbqfield", modelField, label, 12, 12);
+	this.optional = true;
 	this['regex'] = /^[0-9]{4}-?[0-9]{4}-?[0-9]{2}$/i;
 	this.setMessages("check", "####-####-##");	
 }

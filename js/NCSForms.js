@@ -327,13 +327,17 @@ NCSForm.prototype.showPreviousButton = function()
 
 NCSForm.prototype.stepValid = function(step)
 {
-	this.showNextButton();
+	if(step == this.getCurrentStep())
+		this.showNextButton();
+	
 	this.updateProgress();
 }
 
 NCSForm.prototype.stepInvalid = function(step)
 {
-	this.hideNextButton();
+	if(step == this.getCurrentStep())
+		this.hideNextButton();
+
 	this.updateProgress();
 }
 
@@ -379,13 +383,16 @@ NCSFormStep.prototype.activate = function()
 	var container = this.form.getStepContainer();
 	container.innerHTML = "";
 	var fieldDiv;
+	var field;
 	
 	for(key in this.fields)
 	{
+		field = this.fields[key];
+
 		if(this.style != undefined)
-			fieldDiv = this.style.stylize(this.fields[key]);
+			fieldDiv = this.style.stylize(field);
 		else
-			fieldDiv = this.fields[key].edit();
+			fieldDiv = field.edit();
 
 		container.appendChild(fieldDiv);
 	}

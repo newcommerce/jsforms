@@ -98,24 +98,19 @@ NCSFormField.prototype.getCommentId = function()
 NCSFormField.prototype.createCommentEl = function()
 {
 	// COMMENT
-	var commentEl = document.createElement("span");
+	var commentEl = document.createElement("div");
 	commentEl.id = this.getCommentId();
 	return commentEl;
 }
 
 NCSFormField.prototype.getCommentEl = function()
 {
-	var commentId = this.getCommentId();
-	var commentEl = document.getElementById(commentId);
+	var commentEl;
 
-	if(commentEl == undefined)
-	{
-		if(this.commentEl == undefined)
-			this.commentEl = this.createCommentEl();
-	}
-
-	if(commentEl != null && this.commentEl != undefined && this.commentEl != commentEl)
-		this.commentEl = commentEl;
+	if("commentEl" in this)
+		commentEl = this.commentEl;
+	else
+		commentEl = this.commentEl = this.createCommentEl();
 
 	return this.commentEl;
 }
@@ -123,9 +118,9 @@ NCSFormField.prototype.getCommentEl = function()
 NCSFormField.prototype.assembleElements = function()
 {
 	var containerEl = this.getContainerEl();
+	var inputEl = this.getInputEl();
 	var labelEl = this.getLabelEl();
 	var commentEl = this.getCommentEl();
-	var inputEl = this.getInputEl();
 
 	while(containerEl.firstChild != null)
 		containerEl.removeChild(containerEl.firstChild);
@@ -176,6 +171,8 @@ NCSFormField.prototype.validateAjax = function()
 {
 	var windowVar = this.windowVar;
 
+	this.serverValid = "sending";
+
 	var value = this.inputEl.value;
 	var model = this.form.model.model;
 	var field = this.field;
@@ -184,6 +181,8 @@ NCSFormField.prototype.validateAjax = function()
 
 	var getObj = { table:model, field:field, value:value, function: serverFunc, modelId: modelId };
 	var url = "validate.php";
+
+	// remember last value being validated by server.
 
 	ajaxGet(this.windowVar, "serverValidated", "serverValidatedError", url, getObj);
 }
@@ -221,11 +220,13 @@ NCSFormField.prototype.serverValidated = function(event)
 	if(json.result == "true")
 	{
 		this.valid = true;
+		this.serverValid = true;
 		this.commentEl.innerHTML = this.server_validate_good;
 		this.valueAccepted();
 	}
 	else
 	{
+		this.serverValid = false;
 		this.commentEl.innerHTML = this.server_validate_bad;
 		this.valid = false;
 		this.valueUnacceptable();
@@ -251,12 +252,28 @@ NCSFormField.prototype.valueAcceptable = function()
 {
 	if("step" in this && this.step != undefined)
 		this.step.fieldValid(this);
+
+	// show proper one
+	if(this['server_validate_func'] != undefined)
+	{
+		if(this.valid == )
+	}
+	else
+		this.displayGood();
 }
 
 NCSFormField.prototype.valueUnacceptable = function()
 {
 	if("step" in this && this.step != undefined)
 		this.step.fieldInvalid(this);
+
+	// show proper one
+	if(this['server_validate_func'] != undefined)
+	{
+
+	}
+	else
+		this.displayBad();
 }
 
 NCSFormField.prototype.display = function()
@@ -315,24 +332,41 @@ NCSFormField.prototype.displayBad = function()
 		commentEl.appendChild(document.createTextNode(this.bad));
 }
 
+NCSFormField.prototype.dirtied = function()
+{
+	if("postFocusValue" in this && this.postFocusValue == this.inputEl.value && this.regexValid == true && this.valid == true)
+		return false;
+	else
+		return true;
+}
+
+NCSFormField.prototype.isOptional = function()
+{
+	if(!("optional" in this))
+		this.optional = false;
+
+	return this.optional && this.getValue() == "";
+}
+
 NCSFormField.prototype.validate = function()
 {
-	// in case nothing had changed
-	if("postFocusValue" in this && this.postFocusValue == this.inputEl.value && this.regexValid == true && this.valid == true)
+	var val = this.getValue();
+	if(this.isOptional())
+	{
+		this.valid = true;
+		this.valueAccepted();		
+	}
+
+	if(!this.dirtied())
 	{
 		this.valueAccepted();
 		return;
 	}
 
 	if(this.regex != undefined && isElement(this.commentEl))	
-		this.valid = this.regex.test(this.inputEl.value);
+		this.valid = this.regex.test(val);
 	else 
 		this.valid = true;
-
-	if(this.valid)
-		this.displayGood();
-	else
-		this.displayBad();
 
 	this['regexValid'] = this.valid;
 
@@ -358,6 +392,7 @@ NCSFormField.prototype.construct = function(type, modelField, label, length, max
 	this['mandatory'] = true;
 	this.generateWindowVar(type);
 	this.createInputField();
+	this.isOptional();
 }
 
 NCSFormField.prototype.getContainerId = function()

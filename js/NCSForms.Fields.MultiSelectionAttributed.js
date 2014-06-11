@@ -51,6 +51,8 @@ AttributedMultiSelectionField.prototype.optionUnselected = function(choiceObj)
 		this.choices.push(choiceObj);
 		this.addOptions([choiceObj], -1);		
 	}
+
+	this.validate();
 }
 
 // THIS OBJECT IS NECESSARY TO DELETE ALREADY SELECTED OPTIONS

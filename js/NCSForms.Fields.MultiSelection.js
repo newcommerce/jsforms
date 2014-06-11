@@ -446,7 +446,7 @@ FlexibleMultiSelectionField.prototype.createContainerEl = function()
 	moreLabelEl.id = this.getMoreLabelId();
 	moreContainerEl.appendChild(moreLabelEl);
 
-	var moreInputEl =document.createElement("input");
+	var moreInputEl = document.createElement("input");
 	moreInputEl.id = this.getMoreInputId();
 
 	var windowVar = this.windowVar;
@@ -477,8 +477,7 @@ FlexibleMultiSelectionField.prototype.postShowValues = function()
 FlexibleMultiSelectionField.prototype.extraValidate = function(event)
 {
 	var inputEl = event.target;
-	if(inputEl.value.length > 5)
-		this.addButtonEl.disabled = false;
+	this.addButtonEl.disabled = inputEl.value.length < 5;
 }
 
 FlexibleMultiSelectionField.prototype.addElement = function(event)
@@ -520,7 +519,7 @@ FlexibleMultiSelectionField.prototype.addValueSuccessful = function(event)
 		this.moreInputEl.value = "";
 	}
 
-	this.moreInputEl.disabled = this.addButtonEl.disabled = false;
+	this.moreInputEl.disabled = false;
 }
 
 FlexibleMultiSelectionField.prototype.addValueFailed = function(event)
