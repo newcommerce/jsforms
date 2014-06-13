@@ -48,6 +48,11 @@ function createEl(type)
   return document.createElement(type);
 }
 
+function createText(str)
+{
+  return document.createTextNode(str);
+}
+
 function removeFromParent(element)
 {
   if(element.parentNode != null)
@@ -420,4 +425,28 @@ function isElement(obj) {
       (obj.nodeType===1) && (typeof obj.style === "object") &&
       (typeof obj.ownerDocument ==="object");
   }
+}
+
+function removeAppendStyle(element, style)
+{
+  if(style == "")
+    return;
+
+  var className = element.className;
+  if(className.indexOf(" "+style) > -1)
+    className = className.replace(" " + style, "");
+
+  element.className = className;
+}
+
+function addAppendStyle(element, style)
+{
+  if(style == "")
+    return;
+
+  var className = element.className;
+  if(className.indexOf(" "+style) == -1)
+    className += " "+style;
+
+  element.className = className;
 }

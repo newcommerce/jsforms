@@ -134,6 +134,15 @@ NCSFormField.prototype.assembleElements = function()
 
 NCSFormField.prototype.edit = function()
 {
+	if(this.containerEl == undefined && this.server_validate_func != undefined)
+	{
+		this.postFocusValue = this.preFocusValue = this.getModelValue();
+		if(this.postFocusValue != "")
+			this.serverValid = true;
+		else
+			this.serverValid = "unknown";
+	}
+
 	var containerEl = this.assembleElements();
 	this.validate();
 	return containerEl;
@@ -147,6 +156,14 @@ NCSFormField.prototype.keyUp = function(event)
 	this.validate();
 }
 
+NCSFormField.prototype.focusSet = function(event)
+{
+	var innerId = this.inner_id;
+	console.log("["+innerId+'] focusSet');
+	this['focused'] = true;
+	this['preFocusValue'] = this.getValue();
+}
+
 NCSFormField.prototype.focusLost = function(event)
 {
 	var innerId = this.inner_id;
@@ -156,6 +173,7 @@ NCSFormField.prototype.focusLost = function(event)
 	if(this.inputEl.value == this.preFocusValue == this.postFocusValue == this.postValidationValue)
 	{
 		this.valid = true;
+		this.serverValid = true;
 		return;
 	}
 
@@ -163,15 +181,17 @@ NCSFormField.prototype.focusLost = function(event)
 
 	if(this.regexValid && this['server_validate_func'] != undefined)
 		this.validateAjax();
+	else if(this.regexValid)
+		this.valueAccepted()
 	else
-		this.valueAccepted();
+		this.valueUnacceptable();
 }
 
 NCSFormField.prototype.validateAjax = function()
 {
 	var windowVar = this.windowVar;
 
-	this.serverValid = "sending";
+	this.serverValid = "checking";
 
 	var value = this.inputEl.value;
 	var model = this.form.model.model;
@@ -184,6 +204,7 @@ NCSFormField.prototype.validateAjax = function()
 
 	// remember last value being validated by server.
 
+	this.displayComment("checking server");
 	ajaxGet(this.windowVar, "serverValidated", "serverValidatedError", url, getObj);
 }
 
@@ -202,14 +223,6 @@ NCSFormField.prototype.setModelValue = function(field, value)
 	}
 
 	this.form.model.set(field, value);
-}
-
-NCSFormField.prototype.focusSet = function(event)
-{
-	var innerId = this.inner_id;
-	console.log("["+innerId+'] focusSet');
-	this['focused'] = true;
-	this['preFocusValue'] = this.inputEl.value;	
 }
 
 NCSFormField.prototype.serverValidated = function(event)
@@ -254,9 +267,12 @@ NCSFormField.prototype.valueAcceptable = function()
 		this.step.fieldValid(this);
 
 	// show proper one
-	if(this['server_validate_func'] != undefined)
+	if(this.regexValid && this['server_validate_func'] != undefined)
 	{
-		if(this.valid == )
+		if(this.serverValid == true)
+			this.displayComment(this.server_validate_good);
+		else
+			this.displayGood();
 	}
 	else
 		this.displayGood();
@@ -268,9 +284,16 @@ NCSFormField.prototype.valueUnacceptable = function()
 		this.step.fieldInvalid(this);
 
 	// show proper one
-	if(this['server_validate_func'] != undefined)
+	if(this.regexValid && this['server_validate_func'] != undefined)
 	{
-
+		if (this.serverValid == "unknown")
+			this.displayComment(this.good);
+		else if(this.serverValid == "checking")
+			this.displayComment("checking");
+		else if(this.serverValid == false)
+			this.displayComment(this.server_validate_bad);
+		else
+			this.displayBad();
 	}
 	else
 		this.displayBad();
@@ -306,19 +329,15 @@ NCSFormField.prototype.done = function(requiresEdit)
 
 NCSFormField.prototype.displayGood = function()
 {
-	var commentEl = this.getCommentEl();
-
-	if(commentEl == undefined)
-		return;
-
-	while(commentEl.firstChild != null)
-		commentEl.removeChild(commentEl.firstChild);
-
-	if(this.good != undefined)
-		commentEl.appendChild(document.createTextNode(this.good));
+	this.displayComment(this.good);
 }
 
 NCSFormField.prototype.displayBad = function()
+{
+	this.displayComment(this.bad);
+}
+
+NCSFormField.prototype.displayComment = function(commentText)
 {
 	var commentEl = this.getCommentEl();
 
@@ -328,8 +347,8 @@ NCSFormField.prototype.displayBad = function()
 	while(commentEl.firstChild != null)
 		commentEl.removeChild(commentEl.firstChild);
 
-	if(this.bad != undefined)
-		commentEl.appendChild(document.createTextNode(this.bad));
+	if(this.good != undefined)
+		commentEl.appendChild(document.createTextNode(commentText));
 }
 
 NCSFormField.prototype.dirtied = function()
@@ -354,7 +373,7 @@ NCSFormField.prototype.validate = function()
 	if(this.isOptional())
 	{
 		this.valid = true;
-		this.valueAccepted();		
+		this.valueAccepted();
 	}
 
 	if(!this.dirtied())
@@ -371,7 +390,17 @@ NCSFormField.prototype.validate = function()
 	this['regexValid'] = this.valid;
 
 	if(this['server_validate_func'] != undefined)
-		this.valid = false;
+	{
+		if(this.preFocusValue != this.getValue())
+			this.serverValid = "unknown";
+		else
+			this.serverValid = true;
+
+		if(this.regexValid == true && this.serverValid == true)
+			this.valid = true;
+		else
+			this.valid = false;
+	}
 
 	if(this.valid)
 		this.valueAccepted();
@@ -410,7 +439,7 @@ NCSFormField.prototype.getInputId = function()
 
 NCSFormField.prototype.getInputEl = function()
 {	
-	var value = this.getModelValue();
+	var value = this.getModelValue();	
 	this.inputEl.value = value;
 	return this.inputEl;
 }

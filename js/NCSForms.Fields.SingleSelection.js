@@ -338,8 +338,8 @@ SingleSelectRadioField.prototype.createOption = function(valueObj, def)
 
 function SingleSelectIconField(modelField, label, sourceModel, sourceDisplayField, selectedStyle, unselectedStyle, defaultIcon)
 {
-	selectedStyle = selectedStyle || "iconSelected";
-	unselectedStyle = unselectedStyle || "icon";
+	selectedStyle = selectedStyle || "on";
+	unselectedStyle = unselectedStyle || "";
 	sourceDisplayField = sourceDisplayField || "name";
 	defaultIcon = defaultIcon || "no_icon.png";
 
@@ -443,13 +443,27 @@ SingleSelectIconField.prototype.selectionChanged = function(event)
 SingleSelectIconField.prototype.setSelected = function(element)
 {
 	if(element != null)
-		element.className = this.selectedStyle;
+		this.applyAppendClass(element, true, this.selectedStyle, this.unselectedStyle);
 }
 
 SingleSelectIconField.prototype.setUnselected = function(element)
 {
 	if(element != null)
-		element.className = this.unselectedStyle;
+		this.applyAppendClass(element, false, this.selectedStyle, this.unselectedStyle);
+}
+
+SingleSelectIconField.prototype.applyAppendClass = function(element, on, onStyle, offStyle)
+{
+	if(on)
+	{
+		removeAppendStyle(element, offStyle);
+		addAppendStyle(element, onStyle);		
+	}
+	else
+	{
+		removeAppendStyle(element, onStyle);
+		addAppendStyle(element, offStyle);
+	}
 }
 
 SingleSelectIconField.prototype.getValue = function()

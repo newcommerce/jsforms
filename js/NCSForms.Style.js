@@ -176,7 +176,7 @@ VraiProStyle.prototype.styleInput = function(inputEl, size, maxLength)
 }
 
 // ----------------------------------------
-// VraiProCPPStyle
+// VraiProAPCStyle
 // ----------------------------------------
 
 function VraiProAPCStyle(brCount)
@@ -205,7 +205,12 @@ VraiProAPCStyle.prototype.stylizeByClass = function(field, fieldClass, container
 	if(fieldClass == "SingleSelectIconField")
 	{
 		var optionsContEl = field.getOptionsContainerEl();
-		field.setOptionStylizer(this);				
+		field.setOptionStylizer(this);	
+		containerEl.className = "fluid APC_wrapper_alignement";	
+	}
+	else if(fieldClass = "NCSTabbedMultiSelection")
+	{
+		this.blueifyLabel(labelEl);
 	}
 	else
 		return false;
@@ -488,3 +493,15 @@ VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, container
 	return true;
 
 }
+
+
+// ----------------------------------------
+// VraiProAPPStyle
+// ----------------------------------------
+
+function VraiProAPPStyle(brCount)
+{
+	this['brCount'] = brCount || 3;
+}
+
+VraiProAPPStyle.inherits(VraiProStyle);
