@@ -303,8 +303,8 @@ MultiSelectionField.prototype.disableUnselected = function()
 
 function MultiSelectIconField(matchModel, sourceIdField, targetModel, targetIdField, targetDisplayField, label, min, max, selectedStyle, unselectedStyle)
 {
-	selectedStyle = selectedStyle || "iconSelected";
-	unselectedStyle = unselectedStyle || "icon";
+	selectedStyle = selectedStyle || "ON";
+	unselectedStyle = unselectedStyle || "";
 
 	this['selectedStyle'] = selectedStyle;
 	this['unselectedStyle'] = unselectedStyle;
@@ -317,15 +317,13 @@ MultiSelectIconField.inherits(MultiSelectionField);
 MultiSelectIconField.prototype.createCheckBox = function(valueObj)
 {
 	// value.id, value.name, value.selected
-	var divEl = document.createElement("div");
+	var containerEl = document.createElement("div");
 	var imgEl = document.createElement("img");
 	var spanEl = document.createElement("span");	
-	var textEl = document.createTextNode(valueObj.name);
-	var brEl = document.createElement("br");
+	var textEl = document.createTextNode(valueObj.name);	
 
-	divEl.appendChild(imgEl);
-	divEl.appendChild(brEl);
-	divEl.appendChild(spanEl);
+	containerEl.appendChild(imgEl);
+	containerEl.appendChild(spanEl);
 	spanEl.appendChild(textEl);
 
 	if(valueObj.icon_url == undefined)
@@ -334,20 +332,23 @@ MultiSelectIconField.prototype.createCheckBox = function(valueObj)
 		imgEl.src = valueObj.icon_url;
 
 	if(valueObj.selected)
-		this.setSelected(divEl);
+		this.setSelected(containerEl);
 	else
-		this.setUnselected(divEl);
+		this.setUnselected(containerEl);
 
 	var windowVar = this.windowVar;
-	valueObj.box = divEl;
+	valueObj.box = containerEl;
 
-	this.checkboxes.push(divEl);
-	divEl.addEventListener("click", function(event) { window[windowVar].checkBoxClicked(event); });	
+	this.checkboxes.push(containerEl);
+	containerEl.addEventListener("click", function(event) { window[windowVar].checkBoxClicked(event); });	
 
-	divEl.style.cursor = "pointer";
-	disableElementTextSelection(divEl);
+	containerEl.style.cursor = "pointer";
+	disableElementTextSelection(containerEl);
 
-	return divEl;
+	if(this.optionStylizer != null)
+		containerEl = this.optionStylizer.stylizeOption(this, containerEl);
+
+	return containerEl;
 }
 
 MultiSelectIconField.prototype.isSelected = function(element)
@@ -358,13 +359,27 @@ MultiSelectIconField.prototype.isSelected = function(element)
 MultiSelectIconField.prototype.setSelected = function(element)
 {
 	if(element != null)
-		element.className = this.selectedStyle;
+		this.applyAppendClass(element, true, this.selectedStyle, this.unselectedStyle);
 }
 
 MultiSelectIconField.prototype.setUnselected = function(element)
 {
 	if(element != null)
-		element.className = this.unselectedStyle;
+		this.applyAppendClass(element, false, this.selectedStyle, this.unselectedStyle);
+}
+
+MultiSelectIconField.prototype.applyAppendClass = function(element, on, onStyle, offStyle)
+{
+	if(on)
+	{
+		removeAppendStyle(element, offStyle);
+		addAppendStyle(element, onStyle);		
+	}
+	else
+	{
+		removeAppendStyle(element, onStyle);
+		addAppendStyle(element, offStyle);
+	}
 }
 
 MultiSelectIconField.prototype.checkBoxClicked = function(event)

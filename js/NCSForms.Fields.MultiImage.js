@@ -2,34 +2,38 @@
 // Multiple Image Upload
 //-----------------------------
 
-function MultiFileUploadField(typeId, label, min, max, allowedMimeTypeWildCard)
+function MultiFileUploadField(typeId, typeName, label, min, max, allowedMimeTypeWildCard)
 {
 	this.type = "multifileuploadfield";
-	this.constructMFUF(typeId, label, min, max, allowedMimeTypeWildCard);
+	this.constructMFUF(typeId, typeName, label, min, max, allowedMimeTypeWildCard);
 }
 
 MultiFileUploadField.inherits(NCSFormField);
 
-MultiFileUploadField.prototype.constructMFUF = function(typeId, label, min, max, allowedMimeTypeWildCard)
+MultiFileUploadField.prototype.constructMFUF = function(typeId, typeName, label, min, max, allowedMimeTypeWildCard)
 {
 	min = min || 1;
 	max = max || 2;
+	typeName = typeName || "";
 	allowedMimeTypeWildCard = allowedMimeTypeWildCard || "*/*";
 	this.maxFiles = max;
 	this.allowedMimeType = allowedMimeTypeWildCard;
 	this.typeId = typeId;	 // this should be editable
+	this.typeName = typeName;
 	this.acceptedFiles = [];
 	this.minFiles = min;
 	this.description = "";
-	this.construct(this.type, "", label);
+	this.construct(this.type, "", label);	
 }
 
 MultiFileUploadField.prototype.formSet = function()
 {
-	var owner = this.form.model.model;
-	var ownerId = this.form.model.values['id'];
+	this.loadPhotos();	
+}
 
-	var postObj = { owner: owner, owner_id: ownerId, type_id: this.typeId };
+MultiFileUploadField.prototype.loadPhotos = function()
+{
+	var postObj = this.getLoadPhotosParams();
 	var url = "getPhotos.php";
 
 	ajaxPost(this.windowVar, "photosRetreived", "photoRetreivalFailed", url, postObj);
@@ -37,12 +41,21 @@ MultiFileUploadField.prototype.formSet = function()
 	this.focused = true;
 }
 
-MultiFileUploadField.prototype.addImage = function(id, originalName, width, height, mime)
+MultiFileUploadField.prototype.getLoadPhotosParams = function()
+{
+	var owner = this.form.model.model;
+	var ownerId = this.form.model.values['id'];
+	var typeId = this.typeId;
+
+	return { owner: owner, owner_id: ownerId, type_id: typeId };
+}
+
+MultiFileUploadField.prototype.addImage = function(id, url, originalName, width, height, typeName, mime)
 {
 	var windowVar = this.windowVar;
-	var image = new UploadedImage(id, originalName, width, height, mime, function(image) { window[windowVar].imageDeleted(image); });
+	var image = new UploadedImage(id, url, originalName, width, height, typeName, mime, function(image) { window[windowVar].imageDeleted(image); });
 	this.acceptedFiles.push(image);
-	image.show(this.inputEl);
+	image.show(this.resultsContainerEl);
 }
 
 MultiFileUploadField.prototype.photosRetreived = function(event)
@@ -68,8 +81,9 @@ MultiFileUploadField.prototype.photosRetreived = function(event)
 			var originalName = matches[1];
 			var width = photos[i].original_width;
 			var height = photos[i].original_height;
-			var typeId = photos[i].photo_type_id;
-			this.addImage(id, originalName, width, height, mime);
+			var typeId = photos[i].type_id;
+			var typeName = photos[i].type_name;
+			this.addImage(id, url, originalName, width, height, typeName, mime);
 		}	
 		this.edited = true;	
 	}
@@ -101,7 +115,7 @@ MultiFileUploadField.prototype.createInputField = function()
 	fileInputEl.type = "file";	
 	fileInputEl.id = fileInputId;
 	fileInputEl.accept = this.allowedMimeType;
-	fileInputEl.addEventListener("change", function(event) { window[windowVar].activateButtons(); });
+	fileInputEl.addEventListener("change", function(event) { window[windowVar].fileSelected(); });
 
 	var buttonInputEl = document.createElement("input");
 	buttonInputEl.type = "button";
@@ -112,26 +126,73 @@ MultiFileUploadField.prototype.createInputField = function()
 	var progressEl = document.createElement("progress");
 	progressEl.value = 0;
 	progressEl.max = 100;
-	progressEl.style.width = "300px";
+	progressEl.style.visibility = "hidden";	
+
 
 	var editContainerEl = document.createElement("span");
 	var containerEl = document.createElement("div");
+	var typesContainerEl = createEl("div");
+	
 	containerEl.appendChild(editContainerEl);
-	editContainerEl.appendChild(fileInputEl);
-	editContainerEl.appendChild(buttonInputEl);
+	editContainerEl.appendChild(typesContainerEl);
 	editContainerEl.appendChild(progressEl);
+	editContainerEl.appendChild(fileInputEl);	
+	editContainerEl.appendChild(buttonInputEl);	
+
+	typesContainerEl.style.visibility = "hidden";
+
+	var resultsContainerEl = createEl("div");
+
+	containerEl.appendChild(resultsContainerEl);
 
 	this['inputEl'] = containerEl;
 	this['editContainerEl'] = editContainerEl;
 	this['fileInputEl'] = fileInputEl;
 	this['buttonInputEl'] = buttonInputEl;
-	this['progressEl'] = progressEl;		
+	this['progressEl'] = progressEl;
+	this['resultsContainerEl'] = resultsContainerEl;
+	this['typesContainerEl'] = typesContainerEl;
 	containerEl.id = this.getInputId();
+}
+
+MultiFileUploadField.prototype.fileSelected = function()
+{
+	this.activateButtons();
+}
+
+MultiFileUploadField.prototype.getTypesContainerEl = function()
+{
+	return this.typesContainerEl;
+}
+
+MultiFileUploadField.prototype.getResultsContainerEl = function()
+{
+	return this.resultsContainerEl;
 }
 
 MultiFileUploadField.prototype.getInputEl = function()
 {
 	return this.inputEl;
+}
+
+MultiFileUploadField.prototype.getEditContainerEl = function()
+{
+	return this.editContainerEl;
+}
+
+MultiFileUploadField.prototype.getFileInputEl = function()
+{
+	return this.fileInputEl;
+}
+
+MultiFileUploadField.prototype.getButtonInputEl = function()
+{
+	return this.buttonInputEl;
+}
+
+MultiFileUploadField.prototype.getProgressEl = function()
+{
+	return this.progressEl;
 }
 
 MultiFileUploadField.prototype.startUpload = function(event)
@@ -158,6 +219,9 @@ MultiFileUploadField.prototype.startUpload = function(event)
 
 	this.fileInputEl.disabled = true;
 	this.buttonInputEl.disabled = true;	
+
+	// show progress
+	this.getProgressEl().style.visibility = "visible";
 }
 
 MultiFileUploadField.prototype.uploadProgress = function(event)
@@ -182,12 +246,16 @@ MultiFileUploadField.prototype.uploadComplete = function(event)
 	var width = response['width'];
 	var height = response['height'];
 	var mime = response['mime'];
+	var url = response['url'];
 
 	var originalName = response['originalName'];
 	var windowVar = this.windowVar;
-	var image = new UploadedImage(id, originalName, width, height, mime, function(image) { window[windowVar].imageDeleted(image); });
+	var cb = function(image) { window[windowVar].imageDeleted(image); }
+
+	var image = new UploadedImage(id, url, originalName, width, height, this.typeName, mime, cb);
+
 	this.acceptedFiles.push(image);
-	image.show(this.inputEl);
+	image.show(this.resultsContainerEl);
 
 	this.progressEl.value = 0;
 	this.fileInputEl.value = "";
@@ -195,6 +263,16 @@ MultiFileUploadField.prototype.uploadComplete = function(event)
 	this.focused = false;
 
 	this.validate();
+
+	// hide progress
+	this.progressEl.style.visibility = "hidden";
+
+	this.uploadCompleted();
+}
+
+MultiFileUploadField.prototype.uploadCompleted = function()
+{
+
 }
 
 MultiFileUploadField.prototype.activateButtons = function()
@@ -228,60 +306,46 @@ MultiFileUploadField.prototype.validate = function()
 	}
 }
 
-// UPLOADED IMAGE OBJECT
-function UploadedImage(id, originalName, width, height, mimeType, deletedCB)
-{
-	this['id'] = id;
-	this['originalName'] = originalName;
-	this['state'] = 'creating';
-	this['width'] = width;
-	this['height'] = height;
-	this['mimeType'] = mimeType;
-	this['deletedCB'] = deletedCB;
-	this['type'] = "uploadedimage";
-	this['innerId'] = sequence(this.type, this);
-	this['windowVar'] = this.type+"_"+this.innerId;	
-}
-
-UploadedImage.inherits(DeletableSelectedOption);
-
-UploadedImage.prototype.getLabel = function()
-{
-	return this['originalName'] +" ("+this['width']+"x"+this['height']+")";
-}
-
-UploadedImage.prototype.delete = function()
-{
-	this['state'] = 'deleting';
-	var element = this['element'];
-	element.innerHTML = this.generateHtml();
-
-	var url = "deleteImage.php";
-	var id = this.id;
-	var getObj = { id : id };	
-	var windowVar = this.windowVar;
-
-	ajaxGet(windowVar, "deleteSuccess", "deleteFailure", url, getObj);
-}
-
 
 
 // ----------------------------------------
 // TypedMultiFileUploadField
 // ----------------------------------------
 
-function TypedMultiFileUploadField(typeField, sourceModel, sourceDisplayField, sourceCondition, label, min, max, allowedMimeTypeWildCard)
+function TypedMultiFileUploadField(typeField, sourceModel, sourceDisplayField, allowedTypes, label, min, max, allowedMimeTypeWildCard)
 {
-	this.sourceCondition = sourceCondition;
+	allowedTypes = allowedTypes || [1]
+	this.allowedTypes = allowedTypes;
 	this.typeField = typeField;
 	this.sourceModel = sourceModel;
-	this.sourceDisplayField = sourceDisplayField;	
+	this.sourceDisplayField = sourceDisplayField;		
 	this.type = "typedmultifileuploadfield";
-	this.constructMFUF(-1, label, min, max, allowedMimeTypeWildCard);
+	this.constructMFUF(-1, "", label, min, max, allowedMimeTypeWildCard);
 	this.radioLabels = [];
 }
 
 TypedMultiFileUploadField.inherits(MultiFileUploadField);
+
+TypedMultiFileUploadField.prototype.getLoadPhotosParams = function()
+{
+	var owner = this.form.model.model;
+	var ownerId = this.form.model.values['id'];
+	var typeIds = this.allowedTypes.join(",");
+
+	return { owner: owner, owner_id: ownerId, type_ids: typeIds };
+}
+
+TypedMultiFileUploadField.prototype.fileSelected = function()
+{
+	var containerEl = this.getTypesContainerEl();
+	containerEl.style.visibility = "visible";
+	for(var key in this.radioLabels)
+	{
+		this.radioLabels[key].firstChild.checked = false;
+	}
+
+	this.fileInputEl.disabled = (this.acceptedFiles.length >= this.maxFiles);
+}
 
 TypedMultiFileUploadField.prototype.activateButtons = function()
 {
@@ -295,6 +359,10 @@ TypedMultiFileUploadField.prototype.loadValues = function()
 	if(this.valuesLoaded == true)
 		return;
 
+	var containerEl = this.getTypesContainerEl();
+	this.radioLabels = [];
+	removeAllChilds(containerEl);	
+
 	var model = this.sourceModel;
 	var displayField = this.sourceDisplayField;
 	var val = -1;
@@ -303,8 +371,12 @@ TypedMultiFileUploadField.prototype.loadValues = function()
 			           "&displayField="+encUC(displayField)+
 	        	            "&default="+encUC(val)+	
 		                   "&selectId=none";
-	if(this.sourceCondition != null && this.sourceCondition != "")
-		url += "&condition="+encUC(this.sourceCondition);	
+
+    if(this.allowedTypes != undefined && this.allowedTypes.length > 0)
+    {
+    	var condition = "`id` IN ('"+this.allowedTypes.join("','")+"')";
+    	url += "&condition="+encUC(condition);
+	}
 
 	ajaxGet(this.windowVar, "valuesReceived", "valuesReceiptionError", url, {});	                   
 }
@@ -370,8 +442,8 @@ TypedMultiFileUploadField.prototype.addTypeOption = function(valueObj, def)
 
 	radioEl.addEventListener("click", function(event) { window[windowVar].selectionChanged(event); }, false);
 
-	var containerEl = this.buttonInputEl.parentNode;
-	containerEl.insertBefore(labelEl, this.buttonInputEl);
+	var containerEl = this.getTypesContainerEl();
+	containerEl.appendChild(labelEl);
 	this.radioLabels.push(labelEl);
 }
 
@@ -387,7 +459,15 @@ TypedMultiFileUploadField.prototype.selectionChanged = function(event)
 	} while(index == -1);
 
 	var inputEl = this.radioLabels[index].firstChild;
+
 	this.typeId = inputEl.value;	
+	this.typeName = this.radioLabels[index].textContent;
+	this.startUpload(event);
+
+	for(var key in this.radioLabels)
+	{
+		this.radioLabels[key].firstChild.disabled = true;
+	}
 }
 
 TypedMultiFileUploadField.prototype.valuesReceiptionError = function(event)
@@ -395,8 +475,99 @@ TypedMultiFileUploadField.prototype.valuesReceiptionError = function(event)
 	// not sure what to do.
 }
 
+TypedMultiFileUploadField.prototype.uploadCompleted = function()
+{
+	this.getTypesContainerEl().style.visibility = "hidden";
+
+	for(var key in this.radioLabels)
+	{
+		this.radioLabels[key].firstChild.disabled = false;
+	}
+}
+
 TypedMultiFileUploadField.prototype.getInputEl = function()
 {
 	this.loadValues();
+	this.getButtonInputEl().style.display = "none";
 	return this.inputEl;
+}
+
+
+// UPLOADED IMAGE OBJECT
+function UploadedImage(id, url, originalName, width, height, typeName, mimeType, deletedCB)
+{
+	this['id'] = id;
+	this['url'] = url;
+	this['originalName'] = originalName;
+	this['state'] = 'creating';
+	this['width'] = width;
+	this['height'] = height;
+	this['mimeType'] = mimeType;
+	this['deletedCB'] = deletedCB;
+	this['type'] = "uploadedimage";
+	this['innerId'] = sequence(this.type, this);
+	this['windowVar'] = this.type+"_"+this.innerId;	
+	this['typeName'] = typeName;
+}
+
+UploadedImage.inherits(DeletableSelectedOption);
+
+UploadedImage.prototype.show = function(containerEl)
+{
+	this['state'] = "alive";
+
+	this['containerEl'] = containerEl;
+	var element = this['element'] = this.createElement();
+	this.populateElement(element);
+	containerEl.appendChild(element);	
+}
+
+UploadedImage.prototype.populateElement = function(element)
+{
+	var windowVar = this.windowVar;
+
+	element.className = "fluid FLOW_wrapper_thumbnail";
+	var wrapperEl = createEl("div");
+	wrapperEl.className = "fluid FLOW_thumbnail";
+	element.appendChild(wrapperEl);
+
+	var imgEl = createEl("img");
+	imgEl.src = this.url;
+	imgEl.width = 64;
+	imgEl.height = 64;
+	wrapperEl.appendChild(imgEl);	
+
+	if(this.state == "alive" || this.state == "creating")
+	{
+		var btnEl = createEl("button");	
+		btnEl.addEventListener("click", function(event) { window[windowVar].delete(); }, false);
+		btnEl.appendChild(createText("x"));
+		btnEl.className = "bouton supprimer_photo";
+		element.appendChild(btnEl);
+	}
+	else if(this.state == "deleting")
+	{
+		element.appendChild(createText("(deleting)"));
+	}
+
+	var typeEl = createEl("div");
+	typeEl.className = "fluid APC6_avant_pendant_apres";
+	typeEl.appendChild(createText(this.typeName));
+	element.appendChild(typeEl);
+}
+
+UploadedImage.prototype.delete = function()
+{
+	this['state'] = 'deleting';
+	var element = this['element'];
+	removeAllChilds(element);
+
+	this.populateElement(element);
+
+	var url = "deleteImage.php";
+	var id = this.id;
+	var getObj = { id : id };	
+	var windowVar = this.windowVar;
+
+	ajaxGet(windowVar, "deleteSuccess", "deleteFailure", url, getObj);
 }

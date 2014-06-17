@@ -7,35 +7,6 @@ function NCSFieldStyle(brCount)
 	this['brCount'] = brCount || 3;
 }
 
-NCSFieldStyle.prototype.getElement = function(containerEl, id)
-{
-	var level = 0;
-	var index = [];
-	index[0] = 0;
-	var el = containerEl;
-	while(level >= 0)
-	{
-		for(; index[level] < el.children.length; index[level]++)
-		{
-			el = el.children[index[level]];
-			index[level]++;
-
-			level++;
-			index[level] = 0;
-			break;
-		}
-
-		if(el.id == id)
-			return el;
-		
-		if(index[level] >= el.children.length)
-		{
-			el = el.parentNode;
-			level--;
-		}
-	}
-}
-
 NCSFieldStyle.prototype.labelAsPlaceHolder = function(labelEl, inputEl)
 {
 	var labelText = labelEl.textContent;
@@ -68,7 +39,7 @@ NCSFieldStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl
 	return false;
 }
 
-NCSFieldStyle.prototype.stylize = function(field)
+NCSFieldStyle.prototype.stylize = function(field, fieldIndex)
 {
 	var containerEl = field.edit();
 
@@ -82,17 +53,17 @@ NCSFieldStyle.prototype.stylize = function(field)
 	var commentId = field.getCommentId();
 	var inputId = field.getInputId();
 
-	var labelEl = this.getElement(containerEl, labelId);
-	var commentEl = this.getElement(containerEl, commentId);
-	var inputEl = this.getElement(containerEl, inputId);
+	var labelEl = getElementIn(containerEl, labelId);
+	var commentEl = getElementIn(containerEl, commentId);
+	var inputEl = getElementIn(containerEl, inputId);
 
 	var labelText = labelEl.textContent;
 	var brEl;
 	var parentEl;
 
-	if(this.stylizeByClass(field, fieldClass, containerEl))
+	if(this.stylizeByClass(field, fieldClass, containerEl, fieldIndex))
 	{
-		// we're happy!
+		// if first element, add a few br's?
 	}
 	else
 	{
@@ -175,6 +146,67 @@ VraiProStyle.prototype.styleInput = function(inputEl, size, maxLength)
 	inputEl.className = "form";
 }
 
+VraiProStyle.prototype.stylizeTriangleValeursBoard = function(containerEl, field)
+{
+	var containerId = containerEl.id;
+	var labelId = field.getLabelId();
+	var commentId = field.getCommentId();
+	var inputId = field.getInputId();
+
+	var labelEl = getElementIn(containerEl, labelId);
+	var commentEl = getElementIn(containerEl, commentId);
+	var inputEl = getElementIn(containerEl, inputId);
+
+	var labelText = labelEl.textContent;
+	var brEl;
+	var parentEl;
+
+	
+	// remove next siblings if they already existed.		
+	var boardElId = "triangle_board_container";
+	var boardEl = getElementIn(containerEl, boardElId);
+	if(boardEl != undefined)
+		containerEl.removeChild(boardEl);
+
+	this.blueifyLabel(labelEl);
+
+	boardEl = createEl("div");
+	boardEl.className = "fluid Tri_wrapper_resultats";
+	boardEl.id = boardElId;
+
+	var val1El = field.getBoardValue1El();
+	var val2El = field.getBoardValue2El();
+	var val3El = field.getBoardValue3El();
+
+	removeFromParent(val1El);
+	removeFromParent(val2El);
+	removeFromParent(val3El);
+
+	this.addBoardCharac(boardEl, val1El, "Qualité", "fluid Tri_wrapper_caracteristique_qualite");
+	this.addBoardCharac(boardEl, val2El, "Rapidité", "fluid Tri_wrapper_caracteristique_rapidite");
+	this.addBoardCharac(boardEl, val3El, "Économie", "fluid Tri_wrapper_caracteristique_economie");
+
+	containerEl.insertBefore(boardEl, field.getCanvasContainerEl());
+	containerEl.insertBefore(createEl("br"), boardEl);
+	containerEl.insertBefore(createEl("br"), boardEl);
+	containerEl.insertBefore(createEl("br"), field.getCanvasContainerEl());
+	containerEl.insertBefore(createEl("br"), field.getCanvasContainerEl());
+}
+
+VraiProStyle.prototype.addBoardCharac = function(boardEl, valueEl, title, boardClass)
+{
+	var characEl = createEl("div");
+	characEl.className = boardClass;
+	var titleEl = createEl("div");
+	titleEl.className = "fluid Tri_texte";
+	titleEl.appendChild(document.createTextNode(title));
+	characEl.appendChild(titleEl);
+	characEl.appendChild(valueEl);
+	boardEl.appendChild(characEl);
+	valueEl.className = "fluid Tri_pourc";
+}
+
+
 // ----------------------------------------
 // VraiProAPCStyle
 // ----------------------------------------
@@ -186,17 +218,16 @@ function VraiProAPCStyle(brCount)
 
 VraiProAPCStyle.inherits(VraiProStyle);
 
-VraiProAPCStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl)
+VraiProAPCStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl, fieldIndex)
 {
 	var containerId = containerEl.id;
 	var labelId = field.getLabelId();
 	var commentId = field.getCommentId();
 	var inputId = field.getInputId();
 
-
-	var labelEl = this.getElement(containerEl, labelId);
-	var commentEl = this.getElement(containerEl, commentId);
-	var inputEl = this.getElement(containerEl, inputId);
+	var labelEl = getElementIn(containerEl, labelId);
+	var commentEl = getElementIn(containerEl, commentId);
+	var inputEl = getElementIn(containerEl, inputId);
 
 	var labelText = labelEl.textContent;
 	var brEl;
@@ -208,9 +239,116 @@ VraiProAPCStyle.prototype.stylizeByClass = function(field, fieldClass, container
 		field.setOptionStylizer(this);	
 		containerEl.className = "fluid APC_wrapper_alignement";	
 	}
-	else if(fieldClass = "NCSTabbedMultiSelection")
+	else if(fieldClass == "NCSTabbedMultiSelection")
 	{
 		this.blueifyLabel(labelEl);
+	}
+	else if(fieldClass == "NameField")
+	{
+		if(field.field == "title")
+		{
+			inputEl.placeholder = "Titre";
+			inputEl.className = "form APP3_titre";
+			inputEl.maxLength = 40;
+		}		
+
+		this.redifyComment(commentEl);
+			
+	}
+	else if(fieldClass == "TextAreaField")
+	{
+		this.redifyComment(commentEl);
+		inputEl.className = "description_projet";
+		inputEl.maxLength = 300;
+		inputEl.placeholder = "description: matériaux, dimensions, etc";
+	}
+	else if(fieldClass == "MultiFileUploadField" || fieldClass == "TypedMultiFileUploadField")
+	{
+		var editContainerEl = field.getEditContainerEl();
+		var fileInputEl = field.getFileInputEl();
+		var buttonInputEl = field.getButtonInputEl();
+		var progressEl = field.getProgressEl();
+		progressEl.className = "mini_barre_progres";
+		var resultsContainerEl = field.getResultsContainerEl();
+
+		removeAllChilds(containerEl);
+
+		containerEl.appendChild(resultsContainerEl);
+		containerEl.appendChild(commentEl);
+		var actionEl = createEl("div");
+		actionEl.className = "fluid APC_barre_grise";
+		containerEl.appendChild(actionEl);
+		actionEl.appendChild(editContainerEl);	
+		resultsContainerEl.className = "fluid APC6_espace_photos_ajoutees";
+
+	}
+	else if(fieldClass == "TriangleValeursBoardField")
+	{
+		this.stylizeTriangleValeursBoard(containerEl, field);
+	}
+	else if(fieldClass == "DateField")
+	{
+		removeAllChilds(containerEl);
+		var labelText = labelEl.textContent;
+		labelEl = createEl("div");
+		labelEl.appendChild(createText(labelText));
+		labelEl.className = "fluid FLOW_dialogue_texte";
+
+		if(field.field == "start_date")
+		{
+			containerEl.appendChild(createEl("br"));
+			containerEl.appendChild(createEl("br"));
+		}
+
+		containerEl.appendChild(labelEl);
+
+		if(field.field == "start_date")
+		{
+			containerEl.appendChild(createEl("br"));
+			containerEl.appendChild(createEl("br"));
+		}
+
+		containerEl.appendChild(inputEl);
+		inputEl.className = 'form';
+		inputEl.size = 24;
+		if(field.field == "start_date")
+			inputEl.placeholder = "peut commencer...";
+		else if(field.field == "end_date")
+			inputEl.placeholder = "doit être terminé avant...";
+
+		containerEl.appendChild(commentEl);
+		this.redifyComment(commentEl);
+		var jsEl = createEl("script");
+		jsEl.type = "text/javascript";
+		jsEl.appendChild(createText("$(function() {	$( \"#"+field.getInputId()+"\" ).datepicker({ dateFormat: \"yy-mm-dd\", onSelect: function(event) { window['"+field.windowVar+"'].keyUp(event); }}); });"));
+		containerEl.appendChild(jsEl);
+	}
+	else if(fieldClass == "SingleSelectRadioField")
+	{
+		removeAllChilds(containerEl);
+		inputEl = field.getInputEl();
+		inputEl.className = "APC9_budget";
+
+		var childEl = inputEl.firstChild;
+
+		do
+		{
+			if(childEl.localName == "label")
+				childEl.class = "APC9_texte_budget";
+
+			childEl = childEl.nextSibling;
+
+		} while(childEl != null);
+
+		var labelText = labelEl.textContent;
+		labelEl = createEl("div");
+		labelEl.appendChild(createText(labelText));
+		labelEl.className = "fluid FLOW_dialogue_texte";
+		containerEl.appendChild(labelEl);
+		containerEl.appendChild(inputEl);
+		containerEl.appendChild(commentEl);
+		containerEl.className = "fluid APC_dialogue";
+
 	}
 	else
 		return false;
@@ -222,18 +360,25 @@ VraiProAPCStyle.prototype.stylizeOption = function(field, optionEl)
 {
 	var fieldClass = get_class(field);
 	if(fieldClass == "SingleSelectIconField")
-	{
-		optionEl.className = "bouton APC_wrapper_grand_icone1";
-
-		if(optionEl.firstChild != null)
-		{
-			optionEl.firstChild.className = "fluid APC_iconholder_grand";
-			if(optionEl.firstChild.nextSibling != null)
-				optionEl.firstChild.nextSibling.className = "fluid APC_texte_grand_icone";
-		}
-	}
-
+		this.setOptionStyles(optionEl, "bouton APC_wrapper_grand_icone1", "fluid APC_iconholder_grand", "fluid APC_texte_grand_icone");
+	else if(fieldClass == "MultiSelectIconField")
+		this.setOptionStyles(optionEl, "fluid APC_wrapper_petit_icone", "fluid APC_iconholder_petit", "fluid APC_texte_petit_icone");
+	else if(fieldClass == "SingleSelectRadioField")
+		optionEl.className = "APC9_texte_budget";
+	
 	return optionEl;
+}
+
+VraiProAPCStyle.prototype.setOptionStyles = function(optionEl, style1, style2, style3)
+{
+	optionEl.className = style1;
+
+	if(optionEl.firstChild != null)
+	{
+		optionEl.firstChild.className = style2;
+		if(optionEl.firstChild.nextSibling != null )
+			optionEl.firstChild.nextSibling.className = style3;
+	}
 }
 
 
@@ -248,29 +393,16 @@ function VraiProCPPStyle(brCount)
 
 VraiProCPPStyle.inherits(VraiProStyle);
 
-VraiProCPPStyle.prototype.addBoardCharac = function(boardEl, valueEl, title)
-{
-	var characEl = createEl("div");
-	characEl.className = "fluid Tri_wrapper_caracteristique";
-	var titleEl = createEl("div");
-	titleEl.className = "fluid Tri_texte";
-	titleEl.appendChild(document.createTextNode(title));
-	characEl.appendChild(titleEl);
-	characEl.appendChild(valueEl);
-	boardEl.appendChild(characEl);
-	valueEl.className = "fluid Tri_pourc";
-}
-
-VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl)
+VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl, fieldIndex)
 {
 	var containerId = containerEl.id;
 	var labelId = field.getLabelId();
 	var commentId = field.getCommentId();
 	var inputId = field.getInputId();
 
-	var labelEl = this.getElement(containerEl, labelId);
-	var commentEl = this.getElement(containerEl, commentId);
-	var inputEl = this.getElement(containerEl, inputId);
+	var labelEl = getElementIn(containerEl, labelId);
+	var commentEl = getElementIn(containerEl, commentId);
+	var inputEl = getElementIn(containerEl, inputId);
 
 	var labelText = labelEl.textContent;
 	var brEl;
@@ -278,31 +410,7 @@ VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, container
 
 	if(fieldClass == "TriangleValeursBoardField")
 	{
-		// remove next siblings if they already existed.		
-		var boardElId = "triangle_board_container";
-		var boardEl = this.getElement(containerEl, boardElId);
-		if(boardEl != undefined)
-			containerEl.removeChild(boardEl);
-
-		this.blueifyLabel(labelEl);
-
-		boardEl = createEl("div");
-		boardEl.className = "fluid Tri_wrapper_resultats";
-		boardEl.id = boardElId;
-
-		var val1El = field.getBoardValue1El();
-		var val2El = field.getBoardValue2El();
-		var val3El = field.getBoardValue3El();
-
-		removeFromParent(val1El);
-		removeFromParent(val2El);
-		removeFromParent(val3El);
-
-		this.addBoardCharac(boardEl, val1El, "Qualité");
-		this.addBoardCharac(boardEl, val2El, "Rapidité");
-		this.addBoardCharac(boardEl, val3El, "Économie");
-
-		containerEl.insertBefore(boardEl, field.getCanvasContainerEl());
+		this.stylizeTriangleValeursBoard(containerEl, field);
 	}
 	else if(fieldClass == "RBQField")
 	{
@@ -386,10 +494,10 @@ VraiProCPPStyle.prototype.stylizeByClass = function(field, fieldClass, container
 		var moreButtonId = field.getMoreButtonId();
 		var moreInputId = field.getMoreInputId();
 
-		var moreContainerEl = this.getElement(containerEl, moreContainerId);
-		var moreLabelEl = this.getElement(containerEl, moreLabelId);
-		var moreButtonEl = this.getElement(containerEl, moreButtonId);
-		var moreInputEl = this.getElement(containerEl, moreInputId);
+		var moreContainerEl = getElementIn(containerEl, moreContainerId);
+		var moreLabelEl = getElementIn(containerEl, moreLabelId);
+		var moreButtonEl = getElementIn(containerEl, moreButtonId);
+		var moreInputEl = getElementIn(containerEl, moreInputId);
 
 		if(moreLabelEl != null && moreLabelEl.parentNode == moreContainerEl)
 		{
@@ -505,3 +613,89 @@ function VraiProAPPStyle(brCount)
 }
 
 VraiProAPPStyle.inherits(VraiProStyle);
+
+
+function VraiProAPPStyle(brCount)
+{
+	this['brCount'] = brCount || 1;
+}
+
+VraiProAPPStyle.inherits(VraiProStyle);
+
+VraiProAPPStyle.prototype.stylizeByClass = function(field, fieldClass, containerEl, fieldIndex)
+{
+	var containerId = containerEl.id;
+	var labelId = field.getLabelId();
+	var commentId = field.getCommentId();
+	var inputId = field.getInputId();
+
+	var labelEl = getElementIn(containerEl, labelId);
+	var commentEl = getElementIn(containerEl, commentId);
+	var inputEl = getElementIn(containerEl, inputId);
+
+	var labelText = labelEl.textContent;
+	var brEl;
+	var parentEl;
+
+	if(fieldClass == "SingleSelectRadioField")
+	{
+		containerEl.className = "APP3_SECTEUR";		
+		var optionsContEl = field.getOptionsContainerEl();
+		field.setOptionStylizer(this);	
+		containerEl.className = "fluid APC_wrapper_alignement";	
+		// remove BR between options
+
+	}
+	else if(fieldClass == "NCSTabbedMultiSelection")
+	{
+		this.blueifyLabel(labelEl);
+	}	
+	else if(fieldClass == "SingleSelectionField")
+	{	
+		inputEl.className = "form APP3_nature_dintervention";
+	}
+	else if(fieldClass == "NameField")
+	{
+		inputEl.className = "APP3_titre";
+		inputEl.size = 35;
+		inputEl.maxLength = 40;
+		inputEl.placeholder = "Titre de votre projet (optionnel)";
+		containerEl.removeChild(labelEl);
+	}
+	else if(fieldClass == "TextAreaField")
+	{
+		inputEl.className = "description_projet";
+		inputEl.maxLength = 300;
+		inputEl.placeholder = "détails; matériaux, précisions, etc";
+		containerEl.removeChild(labelEl);
+	}
+	else
+		return false;
+
+	return true;
+}
+
+VraiProAPPStyle.prototype.stylizeOption = function(field, optionEl)
+{
+	var fieldClass = get_class(field);
+	if(fieldClass == "SingleSelectRadioField")
+	{
+	/*	if(field.nextSibling.typeName.toLowerCase() == "br")
+			field.parentNode.removeChild(field.nextSibling);
+		field.className = "APP3_secteurs_residentiel_commercial_0";*/
+	}
+
+	return optionEl;
+}
+
+VraiProAPPStyle.prototype.setOptionStyles = function(optionEl, style1, style2, style3)
+{
+	optionEl.className = style1;
+
+	if(optionEl.firstChild != null)
+	{
+		optionEl.firstChild.className = style2;
+		if(optionEl.firstChild.nextSibling != null )
+			optionEl.firstChild.nextSibling.className = style3;
+	}
+}

@@ -52,6 +52,12 @@ NCSFormField.prototype.formStepSet = function()
 
 }
 
+NCSFormField.prototype.setOptionStylizer = function(optionStylizer)
+{
+	this.optionStylizer = optionStylizer;
+}
+
+
 NCSFormField.prototype.createContainerEl = function()
 {
 	// CONTAINER
@@ -499,10 +505,15 @@ DeletableSelectedOption.prototype.generateHtml = function()
 	return html;
 }
 
+DeletableSelectedOption.prototype.createElement = function()
+{
+	return document.createElement("div");
+}
+
 DeletableSelectedOption.prototype.show = function(containerEl)
 {
 	this['containerEl'] = containerEl;
-	var element = this['element'] = document.createElement("div");
+	var element = this['element'] = this.createElement();
 	element.innerHTML = this.generateHtml();	
 	containerEl.appendChild(element);
 	this['state'] = "alive";

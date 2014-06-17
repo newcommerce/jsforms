@@ -5,9 +5,10 @@
 // NCSModel
 // ---------------------------------------------
 
-function NCSModel(model, id)
+function NCSModel(model, id, fixedId)
 {
 	id = id != undefined ? id : -1;
+	fixedId = fixedId || false;
 	var type = "ncsmodel";
 	this.generateWindowVar(type);
 	this['model'] = model;
@@ -16,6 +17,7 @@ function NCSModel(model, id)
 	this['new'] = id == -1;
 	this['validated'] = false;	
 	this['ready'] = false;
+	this['fixedId'] = fixedId;
 }
 
 NCSModel.inherits(EventDispatcher);
@@ -37,7 +39,7 @@ NCSModel.prototype.start = function()
 	var id = this['id'];
 	var relations = JSON.stringify(this['relations']);
 
-	var postObj = { model: model, id: id, relations: relations };
+	var postObj = { model: model, id: id, relations: relations, fixedId: this.fixedId};
 	var url = "startForm.php";
 	ajaxPost(this.windowVar, "started", "startError", url, postObj);
 }
@@ -185,6 +187,11 @@ function NCSForm(defaultModel, progressId, stepContainerId, previousButtonId, ne
 
 NCSForm.inherits(EventDispatcher);
 
+NCSForm.prototype.setModel = function(model)
+{
+	this['defaultModel'] = this['model'] = model;
+}
+
 NCSForm.prototype.initButtons = function()
 {
 	var nextButtonEl = this.getNextButton();
@@ -198,15 +205,18 @@ NCSForm.prototype.initButtons = function()
 
 NCSForm.prototype.nextButtonClicked = function(event)
 {
-
 	// skip to next step. if at the end, do something smart
 	// update the model
-	this.model.save();
+	this.model.save();	
+	this.next();
+}
 
+NCSForm.prototype.next = function()
+{
 	if(this.steps.length > this.activeStep+1)
 	{
+		this.getCurrentStep().deactivate();
 		this.activeStep++;
-		this.getStepContainer().innerHTML = "";
 		this.showStep();
 	}
 	else
@@ -215,9 +225,9 @@ NCSForm.prototype.nextButtonClicked = function(event)
 	}
 }
 
-NCSForm.prototype.previousButtonClicked = function(event)
+NCSForm.prototype.previous = function()
 {
-	this.model.save();
+	this.getCurrentStep().deactivate();
 
 	if(this.activeStep > 0)
 	{
@@ -231,8 +241,15 @@ NCSForm.prototype.previousButtonClicked = function(event)
 	}
 }
 
+NCSForm.prototype.previousButtonClicked = function(event)
+{
+	this.model.save();
+	this.previous();	
+}
+
 NCSForm.prototype.createStep = function(name, style, model)
 {
+	model = model || this.defaultModel;
 	var step = new NCSFormStep(name, style, model);
 	this.addStep(step);
 	return step;
@@ -325,10 +342,16 @@ NCSForm.prototype.showPreviousButton = function()
 	return this.getPreviousButton().style.visibility = "visible";
 }
 
-NCSForm.prototype.stepValid = function(step)
+NCSForm.prototype.stepValid = function(step, autoSkip)
 {
+	autoSkip = autoSkip || false;
 	if(step == this.getCurrentStep())
-		this.showNextButton();
+	{
+		if(autoSkip)
+			this.next();
+		else
+			this.showNextButton();
+	}
 	
 	this.updateProgress();
 }
@@ -368,34 +391,57 @@ NCSForm.prototype.updateProgress = function()
 
 function NCSFormStep(name, style, model)
 {
+	this.type = "ncsformstep";
+	this.constructStep(name, style, model);	
+}
+
+NCSFormStep.inherits(EventDispatcher);
+
+NCSFormStep.prototype.constructStep = function(name, style, model)
+{
 	this['name'] = name;
 	this['fields'] = new Array();
 	this['valid'] = false;
 	this['shown'] = false;
 	this['model'] = model;
-	this['style'] = style;	
+	this['style'] = style;
+	this['autoSkip'] = false;	
+	this['active'] = false;
+	this.generateWindowVar(this.type);
 }
 
-NCSFormStep.inherits(EventDispatcher);
+NCSFormStep.prototype.setAutoSkip = function(autoSkip)
+{
+	if(typeof autoSkip == "boolean")
+		this.autoSkip = autoSkip;
+}
 
 NCSFormStep.prototype.activate = function()
 {
+	this.active = true;
 	var container = this.form.getStepContainer();
 	container.innerHTML = "";
 	var fieldDiv;
 	var field;
+	var i = 0;
 	
 	for(key in this.fields)
 	{
 		field = this.fields[key];
 
 		if(this.style != undefined)
-			fieldDiv = this.style.stylize(field);
+			fieldDiv = this.style.stylize(field, i);
 		else
 			fieldDiv = field.edit();
 
 		container.appendChild(fieldDiv);
+		i++;
 	}
+}
+
+NCSFormStep.prototype.deactivate = function()
+{
+	this.active = false;
 }
 
 NCSFormStep.prototype.setForm = function(form)
@@ -420,6 +466,7 @@ NCSFormStep.prototype.addField = function(field)
 
 NCSFormStep.prototype.fieldValid = function(field)
 {
+	var wasValid = this.valid;
 	// check if all fields are valid, if they are, activate the next button
 	var valid = true;
 	for(key in this.fields)
@@ -428,7 +475,7 @@ NCSFormStep.prototype.fieldValid = function(field)
 	this.valid = valid;
 
 	if(valid)
-		this.form.stepValid(this);
+		this.form.stepValid(this, this.autoSkip && !wasValid);
 	else
 		this.form.stepInvalid(this);
 }

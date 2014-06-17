@@ -324,9 +324,11 @@ SingleSelectRadioField.prototype.createOption = function(valueObj, def)
 	labelEl.appendChild(radioEl);
 	labelEl.appendChild(textNode);
 	inputEl.appendChild(labelEl);
-	textNode = document.createTextNode("&nbsp;");
-	inputEl.appendChild(textNode);
+	inputEl.appendChild(createEl("br"));	
 	radioEl.addEventListener("click", function(event) { window[windowVar].selectionChanged(event); }, false);
+
+	if(this.optionStylizer != null)
+		labelEl = this.optionStylizer.stylizeOption(this, labelEl);
 	this.radioEls.push(radioEl);
 }
 
@@ -338,7 +340,7 @@ SingleSelectRadioField.prototype.createOption = function(valueObj, def)
 
 function SingleSelectIconField(modelField, label, sourceModel, sourceDisplayField, selectedStyle, unselectedStyle, defaultIcon)
 {
-	selectedStyle = selectedStyle || "on";
+	selectedStyle = selectedStyle || "ON";
 	unselectedStyle = unselectedStyle || "";
 	sourceDisplayField = sourceDisplayField || "name";
 	defaultIcon = defaultIcon || "no_icon.png";
@@ -388,13 +390,10 @@ SingleSelectIconField.prototype.createOption = function(valueObj, def)
 	else
 		imgEl.src = valueObj["icon_url"];
 
-	brEl = document.createElement("br");
-
 	containerEl = document.createElement("button");
 	containerEl.id = containerId;
 
 	containerEl.appendChild(imgEl);
-	containerEl.appendChild(brEl);
 	containerEl.appendChild(labelEl);
 	labelEl.appendChild(textNode);
 

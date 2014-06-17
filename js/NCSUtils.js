@@ -1,5 +1,35 @@
 var PHP_DIR = "/scripts/";
 var JS_DIR = "/js/";
+var TEMPLATE_DIR = "/templates/";
+
+function getElementIn(containerEl, id)
+{
+  var level = 0;
+  var index = [];
+  index[0] = 0;
+  var el = containerEl;
+  while(level >= 0)
+  {
+    for(; index[level] < el.children.length; index[level]++)
+    {
+      el = el.children[index[level]];
+      index[level]++;
+
+      level++;
+      index[level] = 0;
+      break;
+    }
+
+    if(el.id == id)
+      return el;
+    
+    if(index[level] >= el.children.length)
+    {
+      el = el.parentNode;
+      level--;
+    }
+  }
+}
 
 function disableElementTextSelection(element)
 {
@@ -153,7 +183,15 @@ function ajaxPost(windowVar, success, failure, url, postObj, progress)
   return ajax;
 }
 
-
+function ajaxGetTemplate(windowVar, success, failure, url)
+{
+  url = TEMPLATE_DIR + url;
+  var ajax = getAjax(windowVar, success, failure);  
+  ajax.open("GET", url);  
+  ajax.setRequestHeader('Content-type', 'text/html');
+  ajax.send();
+  return ajax;
+}
 
 function ajaxGet(windowVar, success, failure, url, getObj)
 {
